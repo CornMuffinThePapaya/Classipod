@@ -502,6 +502,10 @@
   "@clickWheelSensitivitySettingTitle": {
     "description": "The title of the click wheel sensitivity setting"
   },
+  "clickWheelStepSettingTitle": "Click Wheel Step",
+  "@clickWheelStepSettingTitle": {
+    "description": "The title of the click wheel step setting"
+  },
   "small": "Small",
   "@small": {
     "description": "The text for small click wheel size"
@@ -525,6 +529,22 @@
   "high": "High",
   "@high": {
     "description": "The text for high click wheel sensitivity"
+  },
+  "coarse": "Coarse",
+  "@coarse": {
+    "description": "The text for coarse click wheel step"
+  },
+  "normal": "Normal",
+  "@normal": {
+    "description": "The text for normal click wheel step"
+  },
+  "fine": "Fine",
+  "@fine": {
+    "description": "The text for fine click wheel step"
+  },
+  "veryFine": "Very Fine",
+  "@veryFine": {
+    "description": "The text for very fine click wheel step"
   },
   "volumeModeSettingTitle": "Volume Mode",
   "@volumeModeSettingTitle": {

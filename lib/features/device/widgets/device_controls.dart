@@ -114,6 +114,11 @@ class _DeviceControlsState extends ConsumerState<DeviceControls> {
         (settings) => settings.clickWheelSensitivity,
       ),
     );
+    final clickWheelStep = ref.watch(
+      settingsPreferencesControllerProvider.select(
+        (settings) => settings.clickWheelStep,
+      ),
+    );
     late final double clickWheelRadiusRatio;
     late final double selectButtonRadiusRatio;
     switch (clickWheelSize) {
@@ -131,21 +136,23 @@ class _DeviceControlsState extends ConsumerState<DeviceControls> {
         break;
     }
 
-    late final double thresholdDegrees;
+    late final double baseThresholdDegrees;
     switch (clickWheelSensitivity) {
       case ClickWheelSensitivity.veryLow:
-        thresholdDegrees = Constants.clickWheelVeryLowSensitivityThreshold;
+        baseThresholdDegrees = Constants.clickWheelVeryLowSensitivityThreshold;
         break;
       case ClickWheelSensitivity.low:
-        thresholdDegrees = Constants.clickWheelLowSensitivityThreshold;
+        baseThresholdDegrees = Constants.clickWheelLowSensitivityThreshold;
         break;
       case ClickWheelSensitivity.medium:
-        thresholdDegrees = Constants.clickWheelMediumSensitivityThreshold;
+        baseThresholdDegrees = Constants.clickWheelMediumSensitivityThreshold;
         break;
       case ClickWheelSensitivity.high:
-        thresholdDegrees = Constants.clickWheelHighSensitivityThreshold;
+        baseThresholdDegrees = Constants.clickWheelHighSensitivityThreshold;
         break;
     }
+    final double thresholdDegrees = baseThresholdDegrees /
+        clickWheelStep.multiplier;
 
     return LayoutBuilder(
       builder: (context, constraints) {

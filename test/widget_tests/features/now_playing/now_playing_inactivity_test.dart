@@ -19,6 +19,7 @@ import 'package:classipod/features/now_playing/widgets/shuffle_segmented_control
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/settings/models/click_wheel_sensitivity.dart';
 import 'package:classipod/features/settings/models/click_wheel_size.dart';
+import 'package:classipod/features/settings/models/click_wheel_step.dart';
 import 'package:classipod/features/settings/models/device_color.dart';
 import 'package:classipod/features/settings/models/settings_preferences_model.dart';
 import 'package:classipod/features/settings/models/volume_mode.dart';
@@ -155,6 +156,9 @@ class _SettingsModel extends Fake implements SettingsPreferencesModel {
   @override
   ClickWheelSensitivity get clickWheelSensitivity =>
       ClickWheelSensitivity.medium;
+
+  @override
+  ClickWheelStep get clickWheelStep => ClickWheelStep.normal;
 
   @override
   bool get vibrate => false;
