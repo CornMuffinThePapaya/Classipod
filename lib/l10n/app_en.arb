@@ -514,6 +514,10 @@
   "@medium": {
     "description": "The text for medium click wheel size and sensitivity"
   },
+  "mediumHigh": "Medium High",
+  "@mediumHigh": {
+    "description": "The text for medium high click wheel sensitivity"
+  },
   "large": "Large",
   "@large": {
     "description": "The text for large click wheel size"
@@ -545,6 +549,10 @@
   "veryFine": "Very Fine",
   "@veryFine": {
     "description": "The text for very fine click wheel step"
+  },
+  "ultraFine": "Ultra Fine",
+  "@ultraFine": {
+    "description": "The text for ultra fine click wheel step"
   },
   "volumeModeSettingTitle": "Volume Mode",
   "@volumeModeSettingTitle": {

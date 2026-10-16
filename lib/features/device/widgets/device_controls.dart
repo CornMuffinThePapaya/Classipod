@@ -147,12 +147,16 @@ class _DeviceControlsState extends ConsumerState<DeviceControls> {
       case ClickWheelSensitivity.medium:
         baseThresholdDegrees = Constants.clickWheelMediumSensitivityThreshold;
         break;
+      case ClickWheelSensitivity.mediumHigh:
+        baseThresholdDegrees =
+            Constants.clickWheelMediumHighSensitivityThreshold;
+        break;
       case ClickWheelSensitivity.high:
         baseThresholdDegrees = Constants.clickWheelHighSensitivityThreshold;
         break;
     }
-    final double thresholdDegrees = baseThresholdDegrees /
-        clickWheelStep.multiplier;
+    final double thresholdDegrees =
+        baseThresholdDegrees / clickWheelStep.multiplier;
 
     return LayoutBuilder(
       builder: (context, constraints) {

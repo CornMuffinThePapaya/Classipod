@@ -204,6 +204,16 @@ class SettingsPreferencesControllerNotifier
         await ref
             .read(settingsPreferencesRepositoryProvider)
             .setClickWheelSensitivity(
+              clickWheelSensitivityName: ClickWheelSensitivity.mediumHigh.name,
+            );
+        state = state.copyWith(
+          clickWheelSensitivity: ClickWheelSensitivity.mediumHigh,
+        );
+        break;
+      case ClickWheelSensitivity.mediumHigh:
+        await ref
+            .read(settingsPreferencesRepositoryProvider)
+            .setClickWheelSensitivity(
               clickWheelSensitivityName: ClickWheelSensitivity.high.name,
             );
         state = state.copyWith(

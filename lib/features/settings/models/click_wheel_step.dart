@@ -8,7 +8,8 @@ enum ClickWheelStep {
   coarse(0.5),
   normal(1),
   fine(2),
-  veryFine(4);
+  veryFine(4),
+  ultraFine(6);
 
   const ClickWheelStep(this.multiplier);
 
@@ -24,6 +25,8 @@ enum ClickWheelStep {
         return context.localization.fine;
       case veryFine:
         return context.localization.veryFine;
+      case ultraFine:
+        return context.localization.ultraFine;
     }
   }
 }

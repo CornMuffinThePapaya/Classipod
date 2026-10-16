@@ -9,11 +9,12 @@ void main() {
       expect(ClickWheelStep.normal.multiplier, 1);
     });
 
-    test('step order goes from coarse to very fine', () {
+    test('step order goes from coarse to ultra fine', () {
       expect(ClickWheelStep.coarse.index, 0);
       expect(ClickWheelStep.normal.index, 1);
       expect(ClickWheelStep.fine.index, 2);
       expect(ClickWheelStep.veryFine.index, 3);
+      expect(ClickWheelStep.ultraFine.index, 4);
     });
 
     test('coarse doubles the step threshold', () {
@@ -32,10 +33,30 @@ void main() {
       );
     });
 
-    test('combined with sensitivity there are 16 gradations', () {
+    test('ultra fine divides the step threshold by six', () {
+      expect(
+        Constants.clickWheelMediumSensitivityThreshold /
+            ClickWheelStep.ultraFine.multiplier,
+        Constants.clickWheelMediumSensitivityThreshold / 6,
+      );
+    });
+
+    test('medium high sensitivity sits between medium and high', () {
+      expect(Constants.clickWheelMediumHighSensitivityThreshold, 36);
+      expect(
+        Constants.clickWheelMediumHighSensitivityThreshold,
+        lessThan(Constants.clickWheelMediumSensitivityThreshold),
+      );
+      expect(
+        Constants.clickWheelMediumHighSensitivityThreshold,
+        greaterThan(Constants.clickWheelHighSensitivityThreshold),
+      );
+    });
+
+    test('combined with sensitivity there are 25 gradations', () {
       expect(
         ClickWheelSensitivity.values.length * ClickWheelStep.values.length,
-        16,
+        25,
       );
     });
   });

@@ -20,13 +20,14 @@ class Constants {
   static const double clickWheelVeryLowSensitivityThreshold = 90;
   static const double clickWheelLowSensitivityThreshold = 60;
   static const double clickWheelMediumSensitivityThreshold = 45;
+  static const double clickWheelMediumHighSensitivityThreshold = 36;
   static const double clickWheelHighSensitivityThreshold = 22.5;
 
   // Click Wheel Acceleration Constants
   static const double clickWheelAccelerationMinVelocityDegreesPerSecond = 90;
   static const double clickWheelMaxAngularVelocityDegreesPerSecond = 1080;
   static const double clickWheelAccelerationFactor = 4;
-  static const int clickWheelMaxStepsPerPointerEvent = 3;
+  static const int clickWheelMaxStepsPerPointerEvent = 8;
 
   static const double screenHeight = 300;
   static const double deviceClickWheelSmallRadiusRatio = 0.45;
