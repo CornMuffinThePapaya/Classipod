@@ -1,125 +1,84 @@
 import 'dart:async';
 
 import 'package:classipod/core/constants/constants.dart';
-import 'package:classipod/core/utils/exclusion_matcher.dart';
+import 'package:classipod/core/models/music_metadata.dart';
 import 'package:classipod/features/settings/models/exclude_directory_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
-/// A stored exclusion entry together with its Hive key.
-class ExcludeDirectoryEntry {
-  final dynamic key;
-  final ExcludeDirectoryModel model;
-
-  const ExcludeDirectoryEntry({required this.key, required this.model});
-
-  String get directoryPath => model.directoryPath;
-
-  bool get isExcluded => model.isExcluded;
-}
-
 final excludedDirectoriesProvider =
-    NotifierProvider<ExcludeDirectoryNotifier, List<ExcludeDirectoryEntry>>(
+    NotifierProvider<ExcludeDirectoryNotifier, List<ExcludeDirectoryModel>>(
       ExcludeDirectoryNotifier.new,
     );
 
-class ExcludeDirectoryNotifier
-    extends Notifier<List<ExcludeDirectoryEntry>> {
+class ExcludeDirectoryNotifier extends Notifier<List<ExcludeDirectoryModel>> {
   final Box<ExcludeDirectoryModel> _excludeDirectoryBox =
       Hive.box<ExcludeDirectoryModel>(Constants.excludedDirectoriesBoxName);
 
-  List<ExcludeDirectoryModel>? _exclusionsOnEntry;
+  Set<String>? _exclusionsOnEntry;
 
   @override
-  List<ExcludeDirectoryEntry> build() {
-    return [
-      for (final key in _excludeDirectoryBox.keys)
-        ExcludeDirectoryEntry(
-          key: key,
-          model: _excludeDirectoryBox.get(key)!,
-        ),
-    ];
+  List<ExcludeDirectoryModel> build() {
+    return _excludeDirectoryBox.values.toList();
   }
 
-  List<ExcludeDirectoryModel> _entryModels() => [
-    for (final entry in state) entry.model,
-  ];
+  Set<String> get _excludedPaths => _excludeDirectoryBox.values
+      .where((directory) => directory.isExcluded)
+      .map((directory) => directory.directoryPath)
+      .toSet();
 
   void beginEditing() {
-    _exclusionsOnEntry = _entryModels();
+    _exclusionsOnEntry = _excludedPaths;
   }
 
   bool takeExclusionChanges() {
     final initial = _exclusionsOnEntry;
     _exclusionsOnEntry = null;
-    return initial != null && !listEquals(initial, _entryModels());
+    return initial != null && !setEquals(initial, _excludedPaths);
   }
 
-  dynamic _keyOf(String directoryPath) {
-    for (final entry in state) {
-      if (normalizeDirectoryPath(entry.directoryPath) ==
-          normalizeDirectoryPath(directoryPath)) {
-        return entry.key;
-      }
-    }
-    return null;
+  List<String> get _parentDirectoryPaths {
+    return _excludeDirectoryBox.values
+        .map((excludeDirectoryModel) => excludeDirectoryModel.directoryPath)
+        .toList();
   }
 
-  /// Resolves the effective exclusion state the user sees for a folder,
-  /// accounting for overrides of excluded ancestors.
-  bool isEffectivelyExcluded(String directoryPath) =>
-      resolveDirectoryExclusion(
-            directoryPath: directoryPath,
-            entries: state.map((entry) => entry.model),
-          ) ==
-      DirectoryExclusionState.excluded;
-
-  /// Creates, updates or removes the entry for [directoryPath] so its
-  /// effective exclusion state matches [isExcluded].
-  Future<void> setExcluded({
-    required String directoryPath,
-    required bool isExcluded,
-  }) async {
-    final key = _keyOf(directoryPath);
-    if (key == null) {
-      await _excludeDirectoryBox.add(
-        ExcludeDirectoryModel(
-          directoryPath: normalizeDirectoryPath(directoryPath),
-          isExcluded: isExcluded,
-        ),
-      );
-    } else {
-      final entry = _excludeDirectoryBox.get(key)!;
-      if (entry.isExcluded == isExcluded) return;
-      await _excludeDirectoryBox.put(
-        key,
-        entry.copyWith(isExcluded: isExcluded),
-      );
-    }
-    _refreshState();
-  }
-
-  /// Flips the visible exclusion state of [directoryPath].
-  Future<void> toggleExcluded(String directoryPath) => setExcluded(
-    directoryPath: directoryPath,
-    isExcluded: !isEffectivelyExcluded(directoryPath),
-  );
-
-  /// Removes entries whose folder is no longer part of the scanned library.
-  Future<void> pruneStaleEntries(Iterable<String> currentDirectories) async {
-    final directories = currentDirectories.map(normalizeDirectoryPath).toSet();
+  Future<void> createDefaultDirectories(
+    Iterable<MusicMetadata> audioFiles,
+  ) async {
     var changed = false;
-    for (final entry in state) {
-      if (!directories.contains(normalizeDirectoryPath(entry.directoryPath))) {
-        await _excludeDirectoryBox.delete(entry.key);
+    for (final musicMetadata in audioFiles) {
+      if (!musicMetadata.isSubsonic &&
+          musicMetadata.parentDirectoryPath != null &&
+          !_parentDirectoryPaths.contains(musicMetadata.parentDirectoryPath)) {
+        final newExcludeDirectoryModel = ExcludeDirectoryModel(
+          directoryPath: musicMetadata.parentDirectoryPath!,
+          isExcluded: false,
+        );
+        await _excludeDirectoryBox.add(newExcludeDirectoryModel);
         changed = true;
       }
     }
-    if (changed) _refreshState();
+    if (changed && ref.mounted) state = _excludeDirectoryBox.values.toList();
   }
 
-  void _refreshState() {
-    if (ref.mounted) state = build();
+  Future<void> toggleExcludeDirectory({
+    required dynamic excludeDirectoryModelKey,
+  }) async {
+    if (excludeDirectoryModelKey == null) {
+      return;
+    } else {
+      final excludeDirectory = _excludeDirectoryBox.get(
+        excludeDirectoryModelKey,
+      );
+      if (excludeDirectory != null) {
+        await _excludeDirectoryBox.put(
+          excludeDirectoryModelKey,
+          excludeDirectory.copyWith(isExcluded: !excludeDirectory.isExcluded),
+        );
+        state = _excludeDirectoryBox.values.toList();
+      }
+    }
   }
 }

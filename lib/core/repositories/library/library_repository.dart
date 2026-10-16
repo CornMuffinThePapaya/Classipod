@@ -5,7 +5,6 @@ import 'package:classipod/core/models/music_metadata.dart';
 import 'package:classipod/core/repositories/library/library_metadata.dart';
 import 'package:classipod/core/repositories/library/library_progress.dart';
 import 'package:classipod/core/repositories/library/library_source.dart';
-import 'package:classipod/core/utils/exclusion_matcher.dart';
 import 'package:classipod/features/music/playlist/models/playlist_model.dart';
 import 'package:hive_ce/hive.dart';
 
@@ -22,11 +21,6 @@ class LibraryRepository {
   final ReadTags readTags;
   final Future<void> Function()? closeReader;
   final void Function()? selectSource;
-
-  /// Returns whether a directory is excluded from the music library. Excluded
-  /// directories are still discovered (so the folder browser can show them)
-  /// but their files skip tag reading and are cached without metadata.
-  final bool Function(String? directoryPath)? isDirectoryExcluded;
   bool forceNextScan = false;
   bool _refreshNextScan = false;
   Future<List<MusicMetadata>>? _pending;
@@ -37,7 +31,6 @@ class LibraryRepository {
     required this.readTags,
     this.closeReader,
     this.selectSource,
-    this.isDirectoryExcluded,
   });
 
   void requestRescan() {
@@ -181,45 +174,22 @@ class LibraryRepository {
             }
           }
         } else {
-          final excluded =
-              isDirectoryExcluded?.call(
-                    parentDirectoryOf(song.path ?? song.uri),
-                  ) ??
-                  false;
-          if (excluded && old != null && previous != null) {
-            // Keep the cached row verbatim: no tag reading, and the metadata
-            // survives until the folder is included again.
-            row = {
-              ...old,
-              'uri': song.uri,
-              'music': previous.copyWith(
-                contentUri: song.uri,
-                sourceVolume: song.volume,
-              ),
-            };
-          } else {
-            final tags = excluded
-                ? const <String, dynamic>{}
-                : await readSongTags(song.path ?? song.uri);
-            final success = !tags.containsKey('error');
-            if (!success && !excluded) failures++;
-            row = {
-              'uri': song.uri,
-              'size': song.size,
-              'modified': song.modified,
-              // Newly discovered excluded files are cached without tags;
-              // marking them unread makes the next scan tag them once the
-              // folder is included.
-              'readSuccess': excluded ? false : success,
-              'hasCover': tags['hasCover'] == true,
-              'music': libraryMetadata(
-                song,
-                tags,
-                index: previous?.originalSongIndex ?? nextIndex++,
-                previous: previous,
-              ),
-            };
-          }
+          final tags = await readSongTags(song.path ?? song.uri);
+          final success = !tags.containsKey('error');
+          if (!success) failures++;
+          row = {
+            'uri': song.uri,
+            'size': song.size,
+            'modified': song.modified,
+            'readSuccess': success,
+            'hasCover': tags['hasCover'] == true,
+            'music': libraryMetadata(
+              song,
+              tags,
+              index: previous?.originalSongIndex ?? nextIndex++,
+              previous: previous,
+            ),
+          };
         }
         row['artworkReadFailed'] = false;
         if (row['hasCover'] == true) {
