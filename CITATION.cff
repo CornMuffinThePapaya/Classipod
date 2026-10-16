@@ -16,4 +16,4 @@ abstract: >-
   An iPod Classic-inspired music player for local audio and streaming
   from Subsonic-compatible servers, including Navidrome.
 license: BSD-4-Clause
-version: 2.1.0
+version: 2.1.1
