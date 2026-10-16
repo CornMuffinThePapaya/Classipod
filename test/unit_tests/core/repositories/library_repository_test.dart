@@ -175,10 +175,10 @@ void main() {
       final box = Hive.box<ExcludeDirectoryModel>(
         Constants.excludedDirectoriesBoxName,
       );
-      final primaryKey = await box.add(
+      await box.add(
         ExcludeDirectoryModel(directoryPath: '/primary', isExcluded: false),
       );
-      final otherKey = await box.add(
+      await box.add(
         ExcludeDirectoryModel(directoryPath: '/other', isExcluded: false),
       );
       final container = ProviderContainer(
@@ -190,20 +190,14 @@ void main() {
       addTearDown(subscription.close);
       expect(container.read(missingTracksProvider), hasLength(2));
       final exclusions = container.read(excludedDirectoriesProvider.notifier);
-      await exclusions.toggleExcludeDirectory(
-        excludeDirectoryModelKey: primaryKey,
-      );
+      await exclusions.toggleExcluded('/primary');
       expect(
         container.read(missingTracksProvider).map((track) => track.location),
         ['/other/2.mp3'],
       );
-      await exclusions.toggleExcludeDirectory(
-        excludeDirectoryModelKey: otherKey,
-      );
+      await exclusions.toggleExcluded('/other');
       expect(container.read(missingTracksProvider), isEmpty);
-      await exclusions.toggleExcludeDirectory(
-        excludeDirectoryModelKey: primaryKey,
-      );
+      await exclusions.toggleExcluded('/primary');
       expect(
         container.read(missingTracksProvider).map((track) => track.location),
         ['/primary/1.mp3'],
@@ -575,14 +569,14 @@ void main() {
       final directories = Hive.box<ExcludeDirectoryModel>(
         Constants.excludedDirectoriesBoxName,
       );
-      expect(directories.values.single.directoryPath, '/primary');
+      // The exclude browser starts empty; scans never auto-seed entries.
+      expect(directories.values, isEmpty);
       final exclusions = container.read(excludedDirectoriesProvider.notifier);
-      await exclusions.toggleExcludeDirectory(
-        excludeDirectoryModelKey: directories.keys.single,
-      );
+      await exclusions.setExcluded(directoryPath: '/primary', isExcluded: true);
       expect(await container.read(filteredAudioFilesProvider.future), isEmpty);
-      await exclusions.toggleExcludeDirectory(
-        excludeDirectoryModelKey: directories.keys.single,
+      await exclusions.setExcluded(
+        directoryPath: '/primary',
+        isExcluded: false,
       );
       expect(
         await container.read(filteredAudioFilesProvider.future),

@@ -7,6 +7,8 @@ import 'package:classipod/core/repositories/library/metadata_worker_stub.dart'
 import 'package:classipod/core/repositories/library/sources/file_access.dart';
 import 'package:classipod/core/repositories/library/sources/file_library_source.dart';
 import 'package:classipod/core/repositories/library/sources/media_store_source.dart';
+import 'package:classipod/core/utils/exclusion_matcher.dart';
+import 'package:classipod/features/settings/controller/exclude_directories_controller.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,6 +35,12 @@ final libraryRepositoryProvider = Provider<LibraryRepository>((ref) {
         '${directory.documentsDirectory.path}/ClassiPod/artwork-v1',
     discover: Platform.isAndroid ? discoverMediaStore : files.discover,
     selectSource: Platform.isAndroid ? null : files.selectAgain,
+    isDirectoryExcluded: (directoryPath) => resolveDirectoryExclusion(
+      directoryPath: directoryPath,
+      entries: ref.read(excludedDirectoriesProvider).map(
+        (entry) => entry.model,
+      ),
+    ) == DirectoryExclusionState.excluded,
     readTags: (uri, {artworkDirectory}) async {
       worker ??= await MetadataWorker.start();
       return worker!.read(uri, artworkDirectory: artworkDirectory);

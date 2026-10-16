@@ -554,6 +554,22 @@
   "@ultraFine": {
     "description": "The text for ultra fine click wheel step"
   },
+  "excludeThisFolder": "Exclude This Folder",
+  "@excludeThisFolder": {
+    "description": "The action to exclude the currently browsed folder from the music library"
+  },
+  "includeThisFolder": "Include This Folder",
+  "@includeThisFolder": {
+    "description": "The action to re-include the currently browsed folder in the music library"
+  },
+  "addFolder": "Add Folder",
+  "@addFolder": {
+    "description": "The action to exclude an additional folder via the system picker"
+  },
+  "upOneLevel": "Up One Level",
+  "@upOneLevel": {
+    "description": "The action to navigate to the parent folder in the exclude directory browser"
+  },
   "volumeModeSettingTitle": "Volume Mode",
   "@volumeModeSettingTitle": {
     "description": "The title of the volume mode setting"
