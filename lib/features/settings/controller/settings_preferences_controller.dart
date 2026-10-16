@@ -51,25 +51,25 @@ class SettingsPreferencesControllerNotifier
       deviceColor: DeviceColor.fromName(
         settingsPreferencesRepository.getDeviceColor(),
       ),
-      clickWheelSize: ClickWheelSize.values.byName(
+      clickWheelSize: ClickWheelSize.fromName(
         settingsPreferencesRepository.getClickWheelSize(),
       ),
-      clickWheelSensitivity: ClickWheelSensitivity.values.byName(
+      clickWheelSensitivity: ClickWheelSensitivity.fromName(
         settingsPreferencesRepository.getClickWheelSensitivity(),
       ),
-      clickWheelStep: ClickWheelStep.values.byName(
+      clickWheelStep: ClickWheelStep.fromName(
         settingsPreferencesRepository.getClickWheelStep(),
       ),
       isTouchScreenEnabled: settingsPreferencesRepository
           .getTouchScreenEnabled(),
-      repeatMode: RepeatMode.values.byName(
+      repeatMode: RepeatMode.fromName(
         settingsPreferencesRepository.getRepeatMode(),
       ),
       vibrate: settingsPreferencesRepository.getVibrate(),
       clickWheelSound: settingsPreferencesRepository.getClickWheelSound(),
-      volumeMode: VolumeMode.values.byName(
-        settingsPreferencesRepository.getVolumeMode(),
-      ),
+      volumeMode: kIsWeb
+          ? VolumeMode.app
+          : VolumeMode.fromName(settingsPreferencesRepository.getVolumeMode()),
       splitScreenEnabled: settingsPreferencesRepository.getSplitScreenEnabled(),
       immersiveMode: settingsPreferencesRepository.getImmersiveMode(),
       coverFlowAppearance: CoverFlowAppearance.fromName(
@@ -295,6 +295,9 @@ class SettingsPreferencesControllerNotifier
   }
 
   Future<void> toggleVolumeMode() async {
+    if (kIsWeb) {
+      return;
+    }
     switch (state.volumeMode) {
       case VolumeMode.app:
         await ref

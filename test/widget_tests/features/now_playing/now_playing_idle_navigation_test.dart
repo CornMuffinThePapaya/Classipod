@@ -59,7 +59,11 @@ void main() {
   late ProviderContainer container;
   late _SplitController splitController;
 
-  Future<void> mount(WidgetTester tester, {String route = 'menu'}) async {
+  Future<void> mount(
+    WidgetTester tester, {
+    String route = 'menu',
+    bool rootPushedRoutes = false,
+  }) async {
     splitController = _SplitController();
     container = ProviderContainer(
       overrides: [
@@ -68,28 +72,41 @@ void main() {
         deviceButtonsServiceProvider.overrideWith(_Buttons.new),
       ],
     );
+    final rootNavigatorKey = rootPushedRoutes ? GlobalKey<NavigatorState>() : null;
+    GoRoute routeBuilder(String name, GlobalKey<NavigatorState>? parentKey) =>
+        GoRoute(
+          path: '/$name',
+          name: name,
+          parentNavigatorKey: parentKey,
+          pageBuilder: (_, state) => CupertinoPage(
+            key: state.pageKey,
+            child: CupertinoPageScaffold(
+              child: Center(child: Text(name)),
+            ),
+          ),
+        );
     router = GoRouter(
       initialLocation: '/$route',
       routes: [
         ShellRoute(
+          navigatorKey: rootNavigatorKey,
           builder: (_, _, child) => NowPlayingIdleNavigation(child: child),
           routes: [
-            for (final name in [
-              'menu',
-              'songs',
-              'search',
-              'searchMoreOptions',
-              'playlistRename',
-              'settings',
-              'songsMoreOptions',
-              'nowPlaying',
-            ])
-              GoRoute(
-                path: '/$name',
-                name: name,
-                builder: (_, _) =>
-                    CupertinoPageScaffold(child: Center(child: Text(name))),
-              ),
+            routeBuilder('menu', null),
+            if (rootPushedRoutes) ...[
+              // Mirrors the app: browsing routes are subroutes of the shell
+              // but pushed onto the root navigator above the shell page.
+              routeBuilder('songs', rootNavigatorKey),
+              routeBuilder('nowPlaying', rootNavigatorKey),
+            ] else ...[
+              routeBuilder('songs', null),
+              routeBuilder('search', null),
+              routeBuilder('searchMoreOptions', null),
+              routeBuilder('playlistRename', null),
+              routeBuilder('settings', null),
+              routeBuilder('songsMoreOptions', null),
+              routeBuilder('nowPlaying', null),
+            ],
           ],
         ),
       ],
@@ -123,6 +140,23 @@ void main() {
     router.pop();
     await tester.pumpAndSettle();
     expect(find.text('menu'), findsOneWidget);
+  });
+
+  testWidgets('idle navigation fires from a route pushed above the shell', (
+    tester,
+  ) async {
+    await mount(tester, rootPushedRoutes: true);
+    router.goNamed('songs');
+    await tester.pumpAndSettle();
+    expect(find.text('songs'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 9));
+    expect(location(), '/songs');
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('nowPlaying'), findsOneWidget);
+    router.pop();
+    await tester.pumpAndSettle();
+    expect(find.text('songs'), findsOneWidget);
   });
 
   for (final route in ['menu', 'songs']) {

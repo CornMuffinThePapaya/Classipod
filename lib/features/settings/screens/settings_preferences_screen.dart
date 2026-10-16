@@ -11,6 +11,7 @@ import 'package:classipod/features/settings/controller/settings_preferences_cont
 import 'package:classipod/features/settings/models/settings_preferences_model.dart';
 import 'package:classipod/features/settings/widgets/settings_list_tile.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -96,7 +97,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   String get routeName => Routes.settings.name;
 
   @override
-  List<_SettingsDisplayItems> get displayItems => _SettingsDisplayItems.values;
+  List<_SettingsDisplayItems> get displayItems => kIsWeb
+      ? _SettingsDisplayItems.values
+            .where((item) => item != _SettingsDisplayItems.volumeMode)
+            .toList()
+      : _SettingsDisplayItems.values;
 
   @override
   Future<void> onSelectPressed() =>

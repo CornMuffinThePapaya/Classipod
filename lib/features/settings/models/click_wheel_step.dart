@@ -1,4 +1,5 @@
 import 'package:classipod/core/extensions/build_context_extensions.dart';
+import 'package:classipod/core/utils/enum_from_name.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 
 /// Fine tuning multiplier applied on top of the click wheel sensitivity
@@ -12,6 +13,8 @@ enum ClickWheelStep {
   ultraFine(6);
 
   const ClickWheelStep(this.multiplier);
+
+  static ClickWheelStep fromName(String? raw) => enumFromName(values, raw, normal);
 
   final double multiplier;
 

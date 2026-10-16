@@ -53,8 +53,7 @@ class _NowPlayingIdleNavigationState
         HardwareKeyboard.instance.logicalKeysPressed.isEmpty &&
         playback.isPlaying &&
         playback.currentMetadata != null &&
-        _browsingRoutes.contains(route.name) &&
-        ModalRoute.of(context)?.isCurrent == true;
+        _browsingRoutes.contains(route.name);
   }
 
   void _restartTimer() {

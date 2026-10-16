@@ -1,4 +1,5 @@
 import 'package:classipod/core/extensions/build_context_extensions.dart';
+import 'package:classipod/core/services/playback/playback_error_provider.dart';
 import 'package:classipod/core/theme/ipod_typography.dart';
 import 'package:classipod/core/widgets/marquee_text.dart';
 import 'package:classipod/features/music/album/providers/album_details_provider.dart';
@@ -98,6 +99,19 @@ class NowPlayingWidget extends ConsumerWidget {
                   "${nowPlayingDetails.queuePosition + 1} ${context.localization.commonOfText} ${nowPlayingDetails.metadataList.length}",
                   style: IpodTypography.caption,
                 ),
+                if (ref.watch(playbackErrorProvider).value
+                    case final String errorMessage)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 5),
+                    child: Text(
+                      errorMessage,
+                      style: IpodTypography.caption.copyWith(
+                        color: CupertinoColors.systemRed.resolveFrom(context),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 const Spacer(),
               ],
             ),

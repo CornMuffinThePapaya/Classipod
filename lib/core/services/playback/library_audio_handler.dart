@@ -82,6 +82,7 @@ class LibraryAudioHandler extends BaseAudioHandler {
   String? _error;
   int _errorCode = 1;
   static const serverConnectionErrorCode = 2;
+  static const int _maxConsecutiveLoadFailures = 3;
 
   LibraryAudioHandler(
     this.player, {
@@ -105,28 +106,23 @@ class LibraryAudioHandler extends BaseAudioHandler {
     );
     _subscriptions.add(player.playbackEventStream.listen((_) => _broadcast()));
     _subscriptions.add(player.playingStream.listen((_) => _broadcast()));
-    _subscriptions.add(
-      player.processingStateStream.distinct().listen((processing) {
-        if (processing == ProcessingState.completed &&
-            player.playing &&
-            !_loading) {
-          unawaited(
-            _serialize(() async {
-              if (!player.playing ||
-                  player.processingState != ProcessingState.completed) {
-                return;
-              }
-              final next = logicalQueue.next(automatic: true);
-              if (next == null) {
-                await player.pause();
-              } else {
-                await _load(next, startPlaying: true);
-              }
-            }).catchError(_reportError),
-          );
-        }
-      }),
-    );
+      _subscriptions.add(
+        player.processingStateStream.distinct().listen((processing) {
+          if (processing == ProcessingState.completed &&
+              player.playing &&
+              !_loading) {
+            unawaited(
+              _serialize(() async {
+                if (!player.playing ||
+                    player.processingState != ProcessingState.completed) {
+                  return;
+                }
+                await _loadNextOrAdvance();
+              }).catchError(_reportError),
+            );
+          }
+        }),
+      );
     _subscriptions.add(player.errorStream.listen(_reportError));
   }
 
@@ -210,6 +206,51 @@ class LibraryAudioHandler extends BaseAudioHandler {
       _indices.add(index);
       _broadcast();
     });
+  }
+
+  /// Advances to the next queue item, skipping past consecutive unloadable
+  /// local tracks. Pauses with the error surfaced once the failure cap is
+  /// reached or the queue is exhausted. Remote failures keep their own
+  /// recovery flow.
+  Future<void> _loadNextOrAdvance() async {
+    final next = logicalQueue.next(automatic: true);
+    if (next == null) {
+      _wantPlayback = false;
+      await player.pause();
+      return;
+    }
+    if (_songs[next].isSubsonic) {
+      await _load(next, startPlaying: true);
+      return;
+    }
+    try {
+      await _load(next, startPlaying: true);
+    } catch (_) {
+      await _advanceAfterLocalFailure();
+    }
+  }
+
+  Future<void> _advanceAfterLocalFailure() async {
+    for (var attempt = 0; attempt < _maxConsecutiveLoadFailures; attempt++) {
+      final next = logicalQueue.next(automatic: true);
+      if (next == null || next == logicalQueue.index) {
+        // Queue exhausted, or repeat-one replaying the failed track.
+        _wantPlayback = false;
+        await player.pause();
+        return;
+      }
+      final nextIsRemote = _songs[next].isSubsonic;
+      try {
+        await _load(next, startPlaying: true);
+        return;
+      } catch (_) {
+        if (nextIsRemote) {
+          return;
+        }
+      }
+    }
+    _wantPlayback = false;
+    await player.pause();
   }
 
   Future<void> select(int index, {bool startPlaying = true}) {
@@ -347,6 +388,18 @@ class LibraryAudioHandler extends BaseAudioHandler {
         return;
       }
       if (!_sourceLoaded) {
+        if (!_songs[logicalQueue.index].isSubsonic) {
+          try {
+            await _load(
+              logicalQueue.index,
+              startPlaying: true,
+              initialPosition: _initialPosition ?? Duration.zero,
+            );
+          } catch (_) {
+            await _advanceAfterLocalFailure();
+          }
+          return;
+        }
         await _load(
           logicalQueue.index,
           startPlaying: true,

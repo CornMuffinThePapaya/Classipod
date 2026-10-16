@@ -1,4 +1,5 @@
 import 'package:classipod/core/extensions/build_context_extensions.dart';
+import 'package:classipod/core/utils/enum_from_name.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 
 enum ClickWheelSensitivity {
@@ -7,6 +8,9 @@ enum ClickWheelSensitivity {
   medium,
   mediumHigh,
   high;
+
+  static ClickWheelSensitivity fromName(String? raw) =>
+      enumFromName(values, raw, medium);
 
   String title(BuildContext context) {
     switch (this) {

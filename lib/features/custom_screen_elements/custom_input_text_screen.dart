@@ -1,5 +1,6 @@
 import 'package:classipod/core/extensions/build_context_extensions.dart';
 import 'package:classipod/core/extensions/go_router_extensions.dart';
+import 'package:classipod/core/services/audio_player_service.dart';
 import 'package:classipod/core/widgets/input_text_bar.dart';
 import 'package:classipod/features/custom_screen_elements/screen_view_state.dart';
 import 'package:classipod/features/device/models/device_action.dart';
@@ -103,11 +104,19 @@ mixin CustomInputTextScreen<T extends ConsumerStatefulWidget>
   }
 
   Future<void> seekForward() async {
-    inputTextBarController.addSpace();
+    if (isInputTextBarActive) {
+      inputTextBarController.addSpace();
+    } else {
+      await ref.read(audioPlayerServiceProvider.notifier).nextSong();
+    }
   }
 
   Future<void> seekBackward() async {
-    inputTextBarController.removeCharacter();
+    if (isInputTextBarActive) {
+      inputTextBarController.removeCharacter();
+    } else {
+      await ref.read(audioPlayerServiceProvider.notifier).seekBackwards();
+    }
   }
 
   void seekBackwardLongPress() {}

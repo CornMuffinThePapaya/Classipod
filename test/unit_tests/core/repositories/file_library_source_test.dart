@@ -94,7 +94,12 @@ void main() {
         pickLocations: () async => {'directory': music.path},
       );
       final result = await source.discover();
-      expect(result.songs.single.path, song.absolute.path);
+      // Directory enumeration returns native separators, so compare
+      // separator-normalized URIs instead of raw path strings.
+      expect(
+        File(result.songs.single.path!).absolute.uri,
+        song.absolute.uri,
+      );
       expect(result.songs.single.volume, music.absolute.uri.toString());
     },
   );

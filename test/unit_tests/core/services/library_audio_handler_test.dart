@@ -26,6 +26,7 @@ class TestPlayer extends Fake implements AudioPlayer {
   final positions = StreamController<Duration>.broadcast();
   final loadedIds = <String>[];
   bool failLoad = false;
+  final Set<String> failIds = {};
   PlayerException? loadError;
   Completer<void>? blockedSeek;
   bool rejectPause = false;
@@ -60,9 +61,12 @@ class TestPlayer extends Fake implements AudioPlayer {
     Duration? initialPosition,
   }) async {
     if (loadError != null) throw loadError!;
-    if (failLoad) throw StateError('unreadable track');
+    final id = ((source as UriAudioSource).tag as MediaItem).id;
+    if (failLoad || failIds.contains(id)) {
+      throw StateError('unreadable track');
+    }
     sourceCount = 1;
-    loadedIds.add(((source as UriAudioSource).tag as MediaItem).id);
+    loadedIds.add(id);
     position = initialPosition ?? Duration.zero;
     processingState = ProcessingState.ready;
     states.add(processingState);
@@ -275,7 +279,16 @@ void main() {
           remote ? 'Source error: failed host lookup' : 'File not found',
           null,
         );
-        await expectLater(handler.play(), throwsStateError);
+        // Local play advances past the dead track instead of surfacing the
+        // load failure as an exception; remote failures keep their recovery
+        // flow and still throw. Either way the restore-failure hook resets
+        // the queue.
+        if (remote) {
+          await expectLater(handler.play(), throwsStateError);
+        } else {
+          await handler.play();
+          expect(player.playing, isFalse);
+        }
         await Future<void>.delayed(const Duration(milliseconds: 50));
         expect(handler.recovering, isFalse);
         expect(handler.wantsPlayback, isFalse);
@@ -350,7 +363,11 @@ void main() {
       position: const Duration(seconds: 7),
     );
     player.failLoad = true;
-    await expectLater(handler.play(), throwsStateError);
+    // Play advances past the dead track; with a single-song queue it pauses
+    // with the error surfaced and the restored position retained for retry.
+    await handler.play();
+    expect(player.playing, isFalse);
+    expect(handler.playbackState.value.errorMessage, isNotNull);
     expect(handler.displayPosition, const Duration(seconds: 7));
     player.failLoad = false;
     await handler.play();
@@ -489,8 +506,61 @@ void main() {
     final service = container.read(audioPlayerServiceProvider.notifier);
     await service.nextSong();
     expect(container.read(audioPlayerServiceProvider).hasError, isTrue);
+    // Play on a dead track advances past it; with every track dead it
+    // pauses with the error surfaced instead of throwing.
     await service.play();
-    expect(container.read(audioPlayerServiceProvider).hasError, isTrue);
+    expect(container.read(audioPlayerServiceProvider).hasError, isFalse);
+    expect(player.playing, isFalse);
+    expect(handler.playbackState.value.errorMessage, isNotNull);
+  });
+
+  test('completion advances past consecutive dead local tracks', () async {
+    await handler.setSongs([song(0), song(1), song(2), song(3)]);
+    player.failIds.addAll({'song-1', 'song-2'});
+    await handler.play();
+    await flushEvents();
+    expect(player.playing, isTrue);
+    player.complete();
+    await flushEvents();
+    expect(player.loadedIds.last, 'song-3');
+    expect(player.playing, isTrue);
+  });
+
+  test(
+    'auto advance gives up after the failure cap and pauses with an error',
+    () async {
+      await handler.setSongs([
+        song(0),
+        song(1),
+        song(2),
+        song(3),
+        song(4),
+      ]);
+      player.failIds.addAll({'song-1', 'song-2', 'song-3', 'song-4'});
+      await handler.play();
+      await flushEvents();
+      expect(player.playing, isTrue);
+      player.complete();
+      await flushEvents();
+      expect(player.loadedIds, ['song-0']);
+      expect(player.playing, isFalse);
+      expect(handler.playbackState.value.errorMessage, isNotNull);
+    },
+  );
+
+  test('repeat one on a dead track pauses instead of looping forever', () async {
+    await handler.setSongs([song(0), song(1)]);
+    await handler.select(1);
+    expect(player.loadedIds.last, 'song-1');
+    player.failIds.add('song-1');
+    await handler.setRepeatMode(AudioServiceRepeatMode.one);
+    await handler.play();
+    await flushEvents();
+    expect(player.playing, isTrue);
+    player.complete();
+    await flushEvents();
+    expect(player.playing, isFalse);
+    expect(handler.playbackState.value.errorMessage, isNotNull);
   });
 
   test(

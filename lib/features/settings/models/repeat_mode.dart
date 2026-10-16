@@ -1,4 +1,5 @@
 import 'package:classipod/core/extensions/build_context_extensions.dart';
+import 'package:classipod/core/utils/enum_from_name.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -6,6 +7,8 @@ enum RepeatMode {
   off,
   one,
   all;
+
+  static RepeatMode fromName(String? raw) => enumFromName(values, raw, off);
 
   String title(BuildContext context) {
     switch (this) {
